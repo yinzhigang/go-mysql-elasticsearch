@@ -28,6 +28,7 @@ const (
 	// for the mysql int type to es date type
 	// set the [rule.field] created_time = ",date"
 	fieldTypeDate = "date"
+	fieldTypeJSON = "json"
 )
 
 type posSaver struct {
@@ -500,6 +501,20 @@ func (r *River) getFieldValue(col *schema.TableColumn, fieldType string, value i
 			case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 				fieldValue = r.makeReqColumnData(col, time.Unix(v.Int(), 0).Format(mysql.TimeFormat))
 			}
+		}
+	case fieldTypeJSON:
+		var f interface{}
+		var err error
+		switch v := value.(type) {
+		case string:
+			err = json.Unmarshal([]byte(v), &f)
+		case []byte:
+			err = json.Unmarshal(v, &f)
+		}
+		if err == nil {
+			fieldValue = f
+		} else {
+			log.Warnf("json unmarshal error %s, value: %s", err, value)
 		}
 	}
 
